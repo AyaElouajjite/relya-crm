@@ -1,0 +1,50 @@
+spring:
+  application:
+    name: crm-backend
+  profiles:
+    default: dev
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: update
+  servlet:
+    multipart:
+      max-file-size: 5MB
+  # SMTP : sans MAIL_HOST, les e-mails sont écrits dans les logs.
+  mail:
+    host: ${MAIL_HOST:}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail.smtp.auth: ${MAIL_AUTH:true}
+      mail.smtp.starttls.enable: ${MAIL_STARTTLS:true}
+
+server:
+  port: 8080
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:Y2hhbmdlLW1lLWNybS1zZWNyZXQta2V5LWF0LWxlYXN0LTMyLWJ5dGVzLWxvbmc=}
+    expiration-minutes: ${JWT_EXPIRATION_MINUTES:480}
+  cors:
+    allowed-origins: ${CORS_ORIGINS:http://localhost:4200}
+  frontend-url: ${FRONTEND_URL:http://localhost:4200}
+  seed-demo-data: ${SEED_DEMO_DATA:true}
+  mail-from: ${MAIL_FROM:no-reply@crm.ma}
+  ai:
+    # Service Python (scoring + assistant). Vide = scoring heuristique et assistant désactivé.
+    url: ${AI_URL:http://localhost:8000}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  health:
+    mail:
+      enabled: false

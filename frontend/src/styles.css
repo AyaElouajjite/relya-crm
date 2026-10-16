@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { -webkit-tap-highlight-color: transparent; }
+  body { @apply bg-slate-50 text-[14px] text-slate-700 antialiased; font-feature-settings: 'cv11', 'ss01'; }
+  h1 { @apply text-[22px] font-semibold tracking-tight text-slate-900; }
+  h2 { @apply text-[15px] font-semibold text-slate-900; }
+  ::selection { @apply bg-brand-100 text-brand-900; }
+  :focus-visible { @apply outline-none ring-2 ring-brand-500/40 ring-offset-1; }
+  * { scrollbar-width: thin; scrollbar-color: theme('colors.slate.300') transparent; }
+}
+
+@layer components {
+  /* Boutons */
+  .btn { @apply inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3.5 text-sm font-medium transition-colors duration-150 disabled:pointer-events-none disabled:opacity-50; }
+  .btn-primary { @apply btn bg-brand-600 text-white shadow-xs hover:bg-brand-700 active:bg-brand-800; }
+  .btn-secondary { @apply btn border border-slate-200 bg-white text-slate-700 shadow-xs hover:border-slate-300 hover:bg-slate-50; }
+  .btn-danger { @apply btn bg-red-600 text-white shadow-xs hover:bg-red-700; }
+  .btn-ghost { @apply btn px-2.5 text-slate-600 hover:bg-slate-100 hover:text-slate-900; }
+
+  /* Formulaires */
+  .input { @apply block h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-xs transition placeholder:text-slate-400 hover:border-slate-300 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/10 disabled:bg-slate-50 disabled:text-slate-500; }
+  textarea.input, select.input[size] { @apply h-auto py-2; }
+  .input.ng-invalid.ng-touched { @apply border-red-300 focus:border-red-500 focus:ring-red-500/10; }
+  .label { @apply mb-1.5 block text-[13px] font-medium text-slate-700; }
+  .field-error { @apply mt-1 text-xs text-red-600; }
+
+  /* Surfaces */
+  .card { @apply rounded-xl border border-slate-200/80 bg-white shadow-card; }
+  .badge { @apply inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ring-1 ring-inset ring-black/[0.04]; }
+
+  /* Tableaux */
+  .table { @apply min-w-full text-sm; }
+  .table thead { @apply border-b border-slate-200; }
+  .table th { @apply whitespace-nowrap bg-slate-50/80 px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500; }
+  .table th button { @apply uppercase tracking-wider hover:text-slate-700; font: inherit; }
+  .table td { @apply border-b border-slate-100 px-4 py-3 align-middle text-slate-700; }
+  .table tbody tr:last-child td { @apply border-b-0; }
+  .table tbody tr { @apply transition-colors hover:bg-slate-50/70; }
+}

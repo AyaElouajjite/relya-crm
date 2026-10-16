@@ -1,0 +1,9 @@
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/crm}
+    username: ${DB_USER:crm}
+    password: ${DB_PASSWORD:crm}
+
+server:
+  # Derrière nginx : utilise X-Forwarded-For pour journaliser la vraie IP du client.
+  forward-headers-strategy: native

@@ -1,0 +1,147 @@
+@startuml classes
+title CRM — Diagramme de classes (modèle de données)
+hide empty methods
+skinparam classAttributeIconSize 0
+
+' Noms du code (anglais) — nom du cahier des charges entre parenthèses
+
+class "User (Utilisateur)" as User {
+  id : Long
+  firstName, lastName : String
+  email : String <<unique>>
+  password : String <<BCrypt>>
+  active : boolean
+  tokenVersion : int
+  lastLoginAt : Instant
+}
+class "Role (Rôle)" as Role {
+  id : Long
+  code : String
+  label : String
+  permissions : Set<Permission>
+}
+class "Company (Entreprise)" as Company {
+  id : Long
+  name (raisonSociale) : String
+  sector, city, address : String
+  ice : String <<15 chiffres>>
+  status : PROSPECT | CLIENT | INACTIF
+  tags : Set<String>
+  archived : boolean
+}
+class "Contact" as Contact {
+  id : Long
+  firstName, lastName : String
+  email, phone, position : String
+  marketingConsent : boolean
+  consentDate : Instant
+  anonymized : boolean
+}
+class "Lead" as Lead {
+  id : Long
+  source : LeadSource
+  status : LeadStatus
+  score : Integer
+  estimatedBudget : BigDecimal
+  createdAt (dateCréation) : Instant
+  convertedAt : Instant
+}
+class "Opportunity (Opportunité)" as Opp {
+  id : Long
+  title : String
+  amount : BigDecimal
+  probability : int
+  stage : OpportunityStage
+  expectedCloseDate (dateClôture) : LocalDate
+  lossReason : LossReason
+  lastActivityAt : Instant
+}
+class "Product (Produit)" as Product {
+  id : Long
+  name, reference : String
+  priceHT : BigDecimal
+  vatRate (tauxTVA) : BigDecimal
+  type : PRODUIT | SERVICE
+}
+class "Quote (Devis)" as Quote {
+  id : Long
+  number : String
+  date, validUntil : LocalDate
+  status : QuoteStatus
+  totalHT, totalVAT, totalTTC : BigDecimal
+  publicToken : String
+}
+class "QuoteLine (LigneDevis)" as Line {
+  id : Long
+  quantity : BigDecimal
+  unitPrice (prixUnitaire) : BigDecimal
+  discount (remise) : BigDecimal
+  vatRate : BigDecimal
+  getTotalHT() : BigDecimal
+}
+class "Invoice (Facture)" as Invoice {
+  id : Long
+  number : String
+  issueDate, dueDate, paidDate : LocalDate
+  status : EMISE | PAYEE | ANNULEE
+  totalTTC : BigDecimal
+}
+class "Activity (Activité)" as Activity {
+  id : Long
+  type : APPEL | EMAIL | REUNION | TACHE | NOTE | SYSTEME
+  subject (sujet) : String
+  dueAt (date) : Instant
+  status : A_FAIRE | TERMINEE | ANNULEE
+  reminderAt : Instant
+  automatic : boolean
+}
+class "Ticket" as Ticket {
+  id : Long
+  number, subject (objet) : String
+  priority (priorité) : TicketPriority
+  status : TicketStatus
+  openedAt (dateOuverture) : Instant
+  dueAt <<SLA>> : Instant
+  resolvedAt (dateRésolution) : Instant
+}
+class "TicketMessage" as Msg {
+  content : String
+  internal : boolean
+}
+class "Objective (Objectif)" as Objective {
+  year, month : int
+  targetAmount : BigDecimal
+}
+class "Notification" as Notif {
+  type, title, message, link : String
+  readAt : Instant
+}
+class "AuditLog" as Audit {
+  actor, action, entityType : String
+  at : Instant
+}
+
+User "*" --> "1" Role : appartient à
+User "0..1" --> "0..1" Contact : compte portail
+Company "1" o-- "*" Contact : a
+Company "1" o-- "*" Opp : a
+Company "1" o-- "*" Ticket : a
+Lead "*" --> "0..1" User : assigné à
+Lead "0..1" --> "0..1" Company : converti en
+Lead "0..1" --> "0..1" Opp : converti en
+Opp "*" --> "0..1" User : commercial
+Opp "*" --> "0..1" Contact
+Quote "*" --> "1" Opp : lié à
+Quote "1" *-- "1..*" Line : contient
+Line "*" --> "0..1" Product
+Invoice "0..1" --> "1" Quote : émise depuis
+Activity "*" --> "0..1" Contact
+Activity "*" --> "0..1" Opp
+Activity "*" --> "0..1" Lead
+Activity "*" --> "0..1" User : responsable
+Ticket "*" --> "1" Contact : ouvert par
+Ticket "*" --> "0..1" User : traité par
+Ticket "1" *-- "*" Msg
+Objective "*" --> "1" User
+Notif "*" --> "1" User : destinataire
+@enduml

@@ -1,0 +1,87 @@
+@startuml sequence-authentification
+title Séquence — Authentification et appel sécurisé
+actor Utilisateur
+participant "Front-end\nAngular" as FE
+participant "JwtAuthFilter" as F
+participant "AuthController /\nAuthService" as A
+database PostgreSQL as DB
+
+Utilisateur -> FE : e-mail + mot de passe
+FE -> A : POST /api/auth/login
+A -> DB : compter les échecs (15 min)
+alt 5 échecs ou plus
+  A --> FE : 429 Trop de tentatives
+else
+  A -> DB : charger l'utilisateur, vérifier BCrypt
+  A -> DB : journal de connexion
+  A --> FE : JWT (sub, rôle, version) + profil et permissions
+end
+FE -> F : GET /api/... (Authorization: Bearer)
+F -> F : vérifier signature et expiration
+F -> DB : recharger l'utilisateur (actif ? version du jeton ?)
+F -> A : requête authentifiée, @PreAuthorize(permission)
+@enduml
+
+@startuml sequence-conversion-lead
+title Séquence — Capture, scoring et conversion d'un lead
+actor Visiteur
+actor Commercial
+participant "API Spring Boot" as API
+participant "Service IA\n(FastAPI)" as IA
+database PostgreSQL as DB
+
+Visiteur -> API : POST /api/public/leads (consentement, anti-robot)
+API -> DB : choisir le commercial le moins chargé
+API -> IA : POST /score (caractéristiques du lead)
+IA --> API : probabilité de conversion
+API -> DB : enregistrer le lead (score)
+API -> Commercial : notification temps réel (WebSocket)
+Commercial -> API : POST /api/leads/{id}/convert
+API -> DB : créer Entreprise + Contact (+ Opportunité)
+API -> DB : historique automatique « Lead converti »
+API --> Commercial : identifiants créés
+@enduml
+
+@startuml sequence-devis
+title Séquence — Devis avec validation, envoi et acceptation
+actor Commercial
+actor "Directeur\ncommercial" as Dir
+actor Client
+participant "API Spring Boot" as API
+participant "SMTP" as Mail
+database PostgreSQL as DB
+
+Commercial -> API : POST /api/quotes (lignes)
+API -> DB : numéro DEV-AAAA-NNNN, totaux HT / TVA / TTC
+Commercial -> API : POST /api/quotes/{id}/send
+alt TTC ≥ seuil et non validé
+  API -> DB : statut EN_VALIDATION
+  API -> Dir : notification « Devis à valider »
+  Dir -> API : POST /approve
+  API -> Commercial : notification + e-mail « Devis validé »
+  Commercial -> API : POST /send
+end
+API -> Mail : e-mail + PDF en pièce jointe
+API -> DB : statut ENVOYE, opportunité → Proposition
+Client -> API : portail : POST /api/portal/quotes/{id}/accept
+API -> DB : statut ACCEPTE, opportunité GAGNEE, entreprise CLIENT
+API -> DB : facture FAC-AAAA-NNNN
+API -> Commercial : notification « Devis accepté »
+@enduml
+
+@startuml sequence-relance
+title Séquence — Relance automatique et rappels
+participant "Planificateur\n(@Scheduled)" as S
+participant AutomationService as A
+database PostgreSQL as DB
+actor Commercial
+
+S -> A : chaque jour à 8 h
+A -> DB : opportunités ouvertes sans activité depuis N jours
+loop pour chaque opportunité sans relance ouverte
+  A -> DB : créer la tâche « Relance : ... » (demain)
+  A -> Commercial : notification temps réel + e-mail
+end
+S -> A : chaque minute : rappels échus
+A -> Commercial : « Rappel : rendez-vous ... »
+@enduml

@@ -1,0 +1,82 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: crm
+      POSTGRES_USER: crm
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-crm}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U crm -d crm"]
+      interval: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # Service IA : scoring des leads (scikit-learn) et assistant de rédaction (API Claude).
+  ai:
+    build: ./ai-service
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    volumes:
+      - aimodels:/srv/models
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+      ai:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: postgres
+      DB_URL: jdbc:postgresql://db:5432/crm
+      DB_USER: crm
+      DB_PASSWORD: ${DB_PASSWORD:-crm}
+      JWT_SECRET: ${JWT_SECRET:?Definir JWT_SECRET dans .env (cle Base64 de 32 octets minimum)}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin@2026}
+      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-true}
+      AI_URL: http://ai:8000
+      FRONTEND_URL: ${PUBLIC_URL:-https://localhost:8443}
+      CORS_ORIGINS: ${PUBLIC_URL:-https://localhost:8443}
+      MAIL_HOST: ${MAIL_HOST:-}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-no-reply@crm.ma}
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      - backend
+    environment:
+      HTTPS_PORT: ${HTTPS_PORT:-8443}
+    ports:
+      - "${HTTP_PORT:-8081}:80"
+      - "${HTTPS_PORT:-8443}:443"
+    volumes:
+      - ./certs:/etc/nginx/certs
+    restart: unless-stopped
+
+  # Sauvegarde quotidienne de la base (exigence de disponibilité), conservée 7 jours.
+  backup:
+    image: postgres:16-alpine
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: ${DB_PASSWORD:-crm}
+    volumes:
+      - ./backups:/backups
+    entrypoint: >
+      sh -c 'while true; do
+        pg_dump -h db -U crm crm | gzip > /backups/crm-$$(date +%F).sql.gz;
+        find /backups -name "crm-*.sql.gz" -mtime +7 -delete;
+        sleep 86400; done'
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  aimodels:
